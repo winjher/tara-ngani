@@ -409,7 +409,7 @@
 
 <script>
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUgw3gNHRGJb8sJ1X0OwOV5nIkNHbQnsnrSWzmR4EFiV2LWXT5z1THqrZ-1BmTUHqbKw/exec';
-const LV_CLIENT_ID = '123456789-abc...xyz.apps.googleusercontent.com';
+
 (function () {
   if (window.google && window.google.script && window.google.script.run) return;
 
@@ -929,7 +929,8 @@ function boot(){ render(); try{const u=sessionStorage.getItem('bpUser'); if(u&&u
 google.script.run.withSuccessHandler(st=>{applyState(st);boot();})
   .withFailureHandler(e=>{document.body.insertAdjacentHTML('afterbegin','<p class="note" style="padding:8px">Cannot reach the server: '+(e.message||e)+'</p>');boot();}).getState();
   /* ================= GOOGLE SIGN-IN, SESSIONS & PROFILE ================= */
-const LV_CLIENT_ID = 'PASTE_YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const LV_CLIENT_ID = '1Byj4Yxlivrg37c39fEpi7u64ZG2mnnZiKD_yQnMUibqIkBUjBOL813J5.apps.googleusercontent.com';
+
 let lvToken = null;
 let lvProfile = null;
 
