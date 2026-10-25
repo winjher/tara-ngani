@@ -358,6 +358,76 @@
       <p class="note" id="resHint">No reservations on your account yet.</p>
     </div>
   </div>
+  <div id="viewDest" class="hide">
+  <div class="panel">
+    <h2 style="margin-top:0">LepVision Destinations · Marinduque</h2>
+    <p class="muted">Inbound &amp; local tours, door-to-door transfers, and butterfly sanctuary visits.</p>
+    <div class="grid" id="destFleet"><p>Loading fleet…</p></div>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">Book a Tour or Transfer</h2>
+    <div class="form">
+      <label>Vehicle<select id="bkVehicle" onchange="updateTourQuote()"></select></label>
+      <label>Number of days<input id="bkDays" type="number" min="1" max="30" value="1" oninput="updateTourQuote()"></label>
+      <label>Group size<input id="bkGroup" type="number" min="1" value="1" oninput="updateTourQuote()"></label>
+      <label>Travel date<input id="bkDate" type="date"></label>
+      <label>Interests
+        <select id="bkInterest">
+          <option>Butterfly sanctuary tour</option>
+          <option>Smart farming eco-tour</option>
+          <option>Moriones heritage trail</option>
+          <option>Beach getaway</option>
+          <option>Mixed / custom</option>
+        </select>
+      </label>
+      <label>Pickup location<input id="bkPickup" placeholder="Hotel, residence, Balanacan Port, or Gasan Airport"></label>
+      <label>Drop-off location<input id="bkDropoff"></label>
+      <label>Full name<input id="bkName"></label>
+      <label>Contact (WhatsApp / Viber / Email)<input id="bkContact"></label>
+      <label>Notes (dietary needs, accessibility, etc.)<input id="bkNotes"></label>
+    </div>
+    <p id="bkQuote" style="font-size:1rem"></p>
+    <p class="note" id="bkMsg"></p>
+    <button class="btn" onclick="submitTourBooking()">Confirm Booking</button>
+    <p class="muted" style="font-size:.8rem">LepVision confirms each booking within 24 hours and sends payment details.</p>
+  </div>
+
+  <div class="panel">
+    <h3 style="margin-top:0">My Tour Bookings</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Ref</th><th>Date</th><th>Vehicle</th><th>Days</th><th>Estimate</th><th>Status</th><th></th></tr></thead>
+        <tbody id="myBkRows"></tbody>
+      </table>
+    </div>
+    <p class="muted" id="myBkHint">Sign in with Google to see your bookings.</p>
+  </div>
+
+  <div class="panel">
+    <h3 style="margin-top:0">Request a Custom Proposal</h3>
+    <p class="muted">Not sure yet? Send us your ideas and we'll design an itinerary.</p>
+    <div class="form">
+      <label>Full name<input id="dName"></label>
+      <label>Contact (WhatsApp / Viber / Email)<input id="dContact"></label>
+      <label>Group size<input id="dGroup" type="number" min="1" value="1"></label>
+      <label>Preferred travel date<input id="dDate" type="date"></label>
+      <label>Interests
+        <select id="dInterest">
+          <option>Butterfly sanctuary tour</option>
+          <option>Smart farming eco-tour</option>
+          <option>Moriones heritage trail</option>
+          <option>Beach getaway</option>
+          <option>Mixed / custom</option>
+        </select>
+      </label>
+      <label>Pickup location<input id="dPickup"></label>
+      <label>Notes<input id="dNotes"></label>
+    </div>
+    <p class="note" id="dMsg"></p>
+    <button class="btn" onclick="sendInquiry()">Send Request</button>
+  </div>
+</div>
   <div class="wrap">
   <h1>Order online</h1>
   <p class="sub">Promos from our partners. Tap a card to order.</p>
@@ -1083,6 +1153,116 @@ function reload(cb){
     })
     .withFailureHandler(()=>{ if(cb) cb(); })
     .getState();
+}
+let destFleetList = [];
+
+async function loadDestFleet(){
+  const box = document.getElementById('destFleet');
+  try{
+    destFleetList = await destGet('fleet');
+    box.innerHTML = destFleetList.map(f => `
+      <div class="card">
+        <h3 style="margin:0">${esc(f.vehicleClass)}</h3>
+        <small>${f.capacity} pax · ${esc(f.useCase)}</small>
+        <div class="price">₱${Number(f.ratePerDay).toLocaleString()} <small style="font-weight:400">/ day</small></div>
+      </div>`).join('');
+
+    const sel = document.getElementById('bkVehicle');
+    const keep = sel.value;
+    sel.innerHTML = destFleetList.map(f =>
+      `<option value="${esc(f.vehicleClass)}">${esc(f.vehicleClass)} (up to ${f.capacity} pax)</option>`).join('');
+    if(keep) sel.value = keep;
+
+    updateTourQuote();
+    prefillTour();
+    loadMyBookings();
+  }catch(e){
+    box.innerHTML = '<p class="note">Fleet unavailable right now.</p>';
+  }
+}
+
+function prefillTour(){
+  if(!lvProfile) return;
+  const set = (id, val) => { const el = document.getElementById(id); if(el && !el.value && val) el.value = val; };
+  set('bkName', lvProfile.name);
+  set('bkContact', lvProfile.phone || lvProfile.email);
+}
+
+function updateTourQuote(){
+  const el = document.getElementById('bkQuote');
+  const f = destFleetList.find(x => x.vehicleClass === document.getElementById('bkVehicle').value);
+  const days  = parseInt(document.getElementById('bkDays').value, 10) || 0;
+  const group = parseInt(document.getElementById('bkGroup').value, 10) || 0;
+  if(!f){ el.textContent = ''; return; }
+  if(group > Number(f.capacity)){
+    el.innerHTML = `<span class="note">${esc(f.vehicleClass)} seats up to ${f.capacity}. Please choose a larger vehicle.</span>`;
+    return;
+  }
+  const total = Number(f.ratePerDay) * days;
+  el.innerHTML = `Estimated total: <b>₱${total.toLocaleString()}</b> (₱${Number(f.ratePerDay).toLocaleString()} × ${days} day${days>1?'s':''}). LepVision confirms the final price.`;
+}
+
+async function submitTourBooking(){
+  const msg = document.getElementById('bkMsg');
+  const v = id => document.getElementById(id).value.trim();
+  const body = {
+    action:'createTourBooking', token: lvToken || '',
+    vehicleClass: v('bkVehicle'), days: v('bkDays'), groupSize: v('bkGroup'),
+    travelDate: v('bkDate'), interests: v('bkInterest'), pickup: v('bkPickup'), dropoff: v('bkDropoff'),
+    name: v('bkName'), contact: v('bkContact'), notes: v('bkNotes')
+  };
+  if(!body.name || !body.contact || !body.travelDate || !body.pickup || !body.dropoff){
+    msg.className = 'note';
+    msg.textContent = 'Please fill in your name, contact, travel date, pickup, and drop-off.';
+    return;
+  }
+  msg.className = 'note'; msg.textContent = 'Sending booking…';
+  try{
+    const r = await destPost(body);
+    msg.className = 'ok';
+    msg.innerHTML = `✅ Booking received. Reference <b>${esc(r.id)}</b>, estimated total ₱${Number(r.estimate).toLocaleString()}. We'll confirm within 24 hours.`;
+    ['bkPickup','bkDropoff','bkNotes','bkDate'].forEach(i => document.getElementById(i).value = '');
+    loadMyBookings();
+  }catch(e){
+    msg.className = 'note'; msg.textContent = '❌ ' + e.message;
+  }
+}
+
+async function loadMyBookings(){
+  const tb = document.getElementById('myBkRows');
+  const hint = document.getElementById('myBkHint');
+  if(!lvToken){
+    tb.innerHTML = '';
+    hint.style.display = 'block';
+    hint.textContent = 'Sign in with Google to see your bookings.';
+    return;
+  }
+  try{
+    const list = await destPost({ action:'myBookings', token: lvToken });
+    tb.innerHTML = list.map(b => `
+      <tr>
+        <td>${esc(b.id)}</td>
+        <td>${esc(b.travelDate)}</td>
+        <td>${esc(b.vehicleClass)}</td>
+        <td>${b.days}</td>
+        <td>₱${Number(b.estimate).toLocaleString()}</td>
+        <td>${esc(b.status)}</td>
+        <td>${b.status==='Pending Confirmation' ? `<button onclick="cancelMyBooking('${esc(b.id)}')">Cancel</button>` : ''}</td>
+      </tr>`).join('');
+    hint.style.display = list.length ? 'none' : 'block';
+    hint.textContent = 'No bookings yet.';
+  }catch(e){
+    hint.style.display = 'block';
+    hint.textContent = e.message;
+  }
+}
+
+async function cancelMyBooking(id){
+  if(!confirm('Cancel booking ' + id + '?')) return;
+  try{
+    await destPost({ action:'cancelBooking', token: lvToken, id });
+    loadMyBookings();
+  }catch(e){ alert(e.message); }
 }
 </script>
 </body>
