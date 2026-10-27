@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>🦋 Butterfly Pupae Shop & Park</title>
+  <title>Tara Ngani</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
@@ -181,7 +181,7 @@
   /* Brand tint shown until you add a real image */
   .ad[data-brand="jollibee"] .ad-img { background-color: #e4002b; }
   .ad[data-brand="mcdo"] .ad-img { background-color: #ffbc0d; }
-  .ad[data-brand="gwich"] .ad-img { background-color: #00FF00}
+  .ad[data-brand="gwich"] .ad-img { background-color: #008000}
   .ad-img .brand-name {
     position: absolute; inset: 0;
     display: grid; place-items: center;
@@ -230,7 +230,7 @@
 </head>
 <body>
 <header>
-  <h1>🦋 Butterfly Pupae Shop & Park</h1>
+  <h1>🦋 Butterfly Pupae Shop, Park and Tour</h1>
   <div>
     <button id="tabHome" class="on" onclick="showView('home')">🏠 Home</button>
     <button id="tabShop" onclick="showView('shop')">Shop</button>
@@ -1029,14 +1029,13 @@ function showView(v){
 function boot(){
   render();
   showView('home');
-  restoreSession().then(ok => initGoogle(!ok));
+  restoreSession().then(() => initGoogle());;
 }
 
-function initGoogle(showOneTap){
-  if(!(window.google && google.accounts && google.accounts.id)) return setTimeout(()=>initGoogle(showOneTap), 300);
-  google.accounts.id.initialize({ client_id: LV_CLIENT_ID, callback: onGoogleCredential, auto_select: true });
+function initGoogle(){
+  if(!(window.google && google.accounts && google.accounts.id)) return setTimeout(initGoogle, 300);
+  google.accounts.id.initialize({ client_id: LV_CLIENT_ID, callback: onGoogleCredential });
   if(!lvProfile) google.accounts.id.renderButton($('gSignin'), { theme:'outline', size:'medium', shape:'pill', text:'signin_with' });
-  if(showOneTap && !lvProfile) google.accounts.id.prompt();
 }
 
 async function onGoogleCredential(resp){
